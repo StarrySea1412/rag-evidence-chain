@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="color-scheme" content="light"/>
+<meta name="theme-color" content="#f4f1e8"/>
+<link rel="preload" href="assets/fonts/wenkai-regular.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%23f4f1e8'/%3E%3Cpath d='M7 13a3 3 0 0 1 0-4l2-2a3 3 0 0 1 4 0' fill='none' stroke='%2325476b' stroke-width='1.4'/%3E%3Cpath d='M17 11a3 3 0 0 1 0 4l-2 2a3 3 0 0 1-4 0' fill='none' stroke='%2325476b' stroke-width='1.4'/%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%23a33a2a'/%3E%3C/svg%3E"/>
+<meta name="description" content="证据链 RAG：从「问答」到「逐条留证」。切分边界、混合召回、判定三级、多步算术与评测设计——一份把 RAG 写成可验收实验的工程手册，附四枚可玩小样。本文是实验设计，不是实验结果。"/>
+<meta name="author" content="StarrySea1412"/>
+<meta property="og:title" content="证据链 RAG · 造物手记 VOL.13"/>
+<meta property="og:description" content="RAG 的门槛不在接上模型，在证明它是对的。切分、召回、判定、多步与评测——一份可直接照着施工的实验设计。"/>
+<meta property="og:type" content="article"/>
+<meta property="og:image" content="assets/art/hero.webp"/>
+<title>证据链 RAG · 造物手记 VOL.13</title>
+<style>
+/* 《证据链 RAG》· 造物手记 VOL.13
+   卷宗纸：不是实验室格纸，是案卷——牛皮纸底、靛蓝墨线、朱砂印章、铜绿批注。 */
+@font-face{font-family:"LXGW WenKai";src:url("assets/fonts/wenkai-regular.woff2") format("woff2");font-weight:300 599;font-style:normal;font-display:swap}
+@font-face{font-family:"LXGW WenKai";src:url("assets/fonts/wenkai-medium.woff2") format("woff2");font-weight:600 900;font-style:normal;font-display:swap}
+:root{
+  --paper:#f4f1e8;--surface:#fbf9f2;--ink:#1b1d21;--ink-soft:#3d4147;--muted:#6d7078;--faint:#8f9298;
+  --line:#d9d3c4;--line-soft:#e8e3d6;
+  --seal:#a33a2a;--seal-soft:#f3e3de;
+  --indigo:#25476b;--indigo-soft:#e3e9f0;
+  --jade:#3f6b5a;--jade-soft:#e2ece7;
+  --amber:#a9761c;--amber-soft:#f6ecd6;
+  --serif:"LXGW WenKai","Songti SC","STSong","Noto Serif CJK SC",serif;
+  --sans:"LXGW WenKai",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:28px}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.95;-webkit-font-smoothing:antialiased;text-spacing:ideograph-alpha;
+  background-image:linear-gradient(rgba(37,71,107,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(37,71,107,.03) 1px,transparent 1px);
+  background-size:32px 32px}
+::selection{background:#cfe0d8;color:#0e1a15}
+a{color:var(--indigo);text-underline-offset:4px;text-decoration-thickness:1px}
+a:hover{color:var(--seal)}
+button,input,select{touch-action:manipulation}
+button{cursor:pointer;color:inherit;font:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+img{display:block;max-width:100%;height:auto}
+p{margin:0 0 1.25em}
+h1,h2,h3,h4{line-height:1.45;text-wrap:balance;margin:0}
+h1,h2,h3{font-family:var(--serif)}
+strong{font-weight:650;color:#0f1314}
+code{font-family:var(--mono);font-size:.86em;background:var(--indigo-soft);color:#24404f;padding:.12em .38em;border-radius:3px;overflow-wrap:anywhere}
+em{font-style:normal;color:var(--seal)}
+.progress{position:fixed;inset:0 auto auto 0;height:3px;width:100%;background:linear-gradient(90deg,var(--indigo),var(--seal));transform:scaleX(0);transform-origin:left;z-index:60;pointer-events:none}
+.wrap{max-width:1180px;margin:auto;padding-inline:36px}
+.prose{max-width:768px;margin-inline:auto}
+
+/* masthead */
+.masthead{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-block:22px 16px;border-bottom:1.5px solid var(--ink);font-size:12px;letter-spacing:.1em;color:var(--muted);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;font-weight:650;color:var(--ink)}
+.brand-mark{width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--ink);border-radius:2px;background:var(--surface)}
+.brand-mark svg{width:15px;height:15px;display:block}
+.brand small{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--seal);font-weight:700}
+.edition{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.edition .lab{display:inline-flex;align-items:center;gap:7px;color:var(--jade)}
+.lab-dot{width:7px;height:7px;border-radius:50%;background:var(--jade);animation:blink 2.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* hero */
+.hero{padding-block:56px 40px;display:grid;grid-template-columns:1.06fr .94fr;gap:52px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);margin:0 0 24px;background:var(--surface);border:1px solid var(--line);padding:6px 13px 6px 8px;border-radius:2px}
+.eyebrow span{color:var(--seal);letter-spacing:.16em;font-weight:700;padding-right:11px;border-right:1px solid var(--line)}
+.hero h1{font-size:clamp(42px,4.9vw,70px);font-weight:800;line-height:1.12;letter-spacing:-.04em;margin:0 0 20px}
+.hero h1 em{color:var(--indigo)}
+.hero h1 .sub{display:block;font-size:.38em;font-weight:400;letter-spacing:.02em;color:var(--ink-soft);margin-top:16px;line-height:1.7}
+.dek-wrap{margin:0 0 26px;max-width:560px;border-left:3px solid var(--indigo);padding-left:20px}
+.dek-tag{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.09em;margin:0 0 9px}
+.dek{font-size:16.5px;line-height:1.92;color:var(--ink-soft);margin:0}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:2px;padding:6px 11px;background:var(--surface)}
+.pill b{color:var(--ink);font-weight:700}
+
+.art img{width:100%;display:block}
+.art figcaption{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);margin-top:9px;line-height:1.7;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.art figcaption b{color:var(--seal);font-weight:700}
+.ch-art{margin:0 auto 30px;max-width:880px}
+.ch-art .screen{border:1.5px solid var(--ink);background:var(--surface);padding:8px;box-shadow:9px 10px 0 rgba(37,71,107,.09)}
+.ch-art figcaption{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);margin-top:9px;line-height:1.7}
+.ch-art figcaption b{color:var(--indigo);font-weight:700}
+
+/* evidence card (CSS only) */
+.card{position:relative;border:1.5px solid var(--ink);background:var(--surface);padding:18px 18px 15px;box-shadow:10px 11px 0 rgba(37,71,107,.1)}
+.card::before{content:"证据卡";position:absolute;top:-11px;left:16px;background:var(--paper);padding:0 8px;font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--muted)}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:11px}
+.card-head b{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--indigo)}
+.card-head span{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.card-row{display:grid;grid-template-columns:76px 1fr;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line-soft);font-size:12.5px;line-height:1.7}
+.card-row:last-of-type{border-bottom:0}
+.card-row dt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--faint);padding-top:3px}
+.card-row dd{margin:0;color:var(--ink-soft)}
+.card-row dd b{color:var(--ink)}
+.card-quote{margin:6px 0 0;padding:10px 12px;background:var(--jade-soft);border-left:2px solid var(--jade);font-size:12.5px;line-height:1.85;color:#22443a}
+.card-verdict{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+.verdict-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--jade);border:1px solid var(--jade);padding:4px 9px;border-radius:2px;background:var(--jade-soft)}
+.stamp{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--seal);border:2px solid var(--seal);padding:5px 10px;border-radius:2px;transform:rotate(-6deg);opacity:.85}
+
+/* stats */
+.stats{border-block:1.5px solid var(--ink);background:rgba(251,249,242,.75)}
+.stats-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);padding-inline:0}
+.stat{background:var(--surface);padding:16px 22px}
+.stat b{display:block;font-family:var(--mono);font-size:23px;letter-spacing:-.02em;color:var(--ink);line-height:1.25}
+.stat b span{font-size:11px;color:var(--faint);letter-spacing:.04em;margin-left:3px}
+.stat small{display:block;font-size:11px;color:var(--muted);letter-spacing:.04em;margin-top:3px}
+
+/* opening + toc */
+.opening{padding-block:50px 20px}
+.lead{font-size:19.5px;line-height:1.98;color:var(--ink)}
+.lead::first-letter{float:left;font-size:64px;line-height:.84;padding:9px 13px 0 0;color:var(--indigo);font-weight:800}
+.scope{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:15px;margin-top:28px;font-family:var(--mono);line-height:1.85}
+.toc-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:9px;margin:32px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--faint)}
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-top:0;margin:0 0 56px}
+.toc a{background:var(--surface);padding:14px 18px;text-decoration:none;color:var(--ink);display:grid;grid-template-columns:60px 1fr;gap:12px;align-items:baseline;transition:background .18s}
+.toc a:hover{background:var(--indigo-soft);color:var(--ink)}
+.toc a i{font-family:var(--mono);font-style:normal;font-size:10.5px;color:var(--seal);letter-spacing:.04em}
+.toc a span{font-size:14px}
+.toc a small{display:block;font-size:11px;color:var(--faint);margin-top:2px;line-height:1.6}
+
+/* chapters */
+.chapter{padding-block:50px 18px;border-top:1px solid var(--line)}
+.ch-head{display:grid;grid-template-columns:92px 1fr;gap:22px;align-items:start;margin:0 auto 32px;max-width:980px}
+.ch-num{font-family:var(--mono);font-size:13px;color:var(--indigo);letter-spacing:.08em;padding-top:13px;border-top:2px solid var(--indigo);line-height:1.5}
+.ch-num b{display:block;font-size:34px;color:var(--ink);letter-spacing:-.02em;font-weight:700;line-height:1.1}
+.ch-title h2{font-size:clamp(28px,3.2vw,41px);font-weight:750;letter-spacing:-.025em;line-height:1.25}
+.ch-title p{color:var(--muted);font-size:14px;margin:9px 0 0;line-height:1.8;max-width:640px}
+.ch-body{max-width:768px;margin-inline:auto}
+.ch-body h3{font-size:22px;font-weight:700;margin:42px 0 14px;letter-spacing:-.01em;padding-left:13px;border-left:3px solid var(--indigo)}
+.ch-body h4{font-size:16px;font-weight:650;margin:26px 0 8px;color:var(--indigo)}
+.ch-body ul,.ch-body ol{padding-left:1.35em;margin:0 0 1.3em}
+.ch-body li{margin:.4em 0}
+.ch-body li::marker{color:var(--seal)}
+.ch-body table{width:100%;border-collapse:collapse;font-size:13.5px;margin:0 0 1.5em;background:var(--surface)}
+.ch-body th,.ch-body td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;line-height:1.75}
+.ch-body th{background:var(--indigo-soft);font-weight:650;font-size:12.5px;letter-spacing:.02em;color:#1e3a54}
+.ch-body td code{font-size:.82em}
+.table-note{font-size:11.5px;color:var(--faint);margin:-1em 0 1.6em;font-family:var(--mono);line-height:1.7}
+
+/* callout */
+.callout{margin:26px 0;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--amber);font-size:14.5px;line-height:1.9;color:var(--ink-soft)}
+.callout.warn{border-left-color:var(--seal);background:var(--seal-soft)}
+.callout.jade{border-left-color:var(--jade);background:var(--jade-soft);color:#22443a}
+.callout b{color:var(--ink)}
+.callout p:last-child{margin-bottom:0}
+.callout .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--amber);margin-bottom:6px}
+.callout.warn .tag{color:var(--seal)}
+.callout.jade .tag{color:var(--jade)}
+
+/* pre */
+pre{margin:0 0 1.5em;background:#12161a;color:#dfe6ea;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.8;border-left:3px solid var(--jade)}
+pre code{background:none;color:inherit;padding:0;font-size:inherit}
+pre .c{color:#7f9199}
+pre .k{color:#8fc7a8}
+pre .s{color:#e2b57a}
+
+/* demo */
+.demo{margin:30px 0 34px;border:1.5px solid var(--ink);background:var(--surface);box-shadow:8px 9px 0 rgba(163,58,42,.07)}
+.demo-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.demo-head b{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--seal)}
+.demo-head span{font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+.demo-body{padding:16px}
+.demo-ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:14px}
+.demo-ctrl label{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:20px;background:transparent;width:190px;max-width:100%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--line);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--indigo);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--indigo);margin-top:-6px}
+input[type=range]::-moz-range-track{height:4px;background:var(--line);border-radius:2px}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--indigo);border:2px solid var(--surface)}
+.seg{display:inline-flex;border:1px solid var(--line);background:var(--paper);border-radius:2px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:7px 13px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--muted);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--indigo);color:#fbf9f2}
+.num{font-family:var(--mono);font-size:12px;padding:6px 9px;border:1px solid var(--line);background:var(--paper);color:var(--ink);width:74px}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:0 0 14px}
+.readout div{background:var(--surface);padding:10px 13px}
+.readout b{display:block;font-family:var(--mono);font-size:20px;letter-spacing:-.02em;color:var(--ink);line-height:1.3}
+.readout b.hot{color:var(--seal)}
+.readout b.ok{color:var(--jade)}
+.readout small{display:block;font-size:10.5px;color:var(--faint);font-family:var(--mono);letter-spacing:.05em;margin-top:2px}
+
+/* split demo */
+.claim-text{font-size:13.5px;line-height:2.1;background:var(--paper);border:1px solid var(--line);padding:13px 15px;margin:0 0 12px}
+.seg-ok{background:var(--jade-soft);border-bottom:2px solid var(--jade);padding:1px 2px;border-radius:1px}
+.seg-cut{background:var(--seal-soft);border-bottom:2px solid var(--seal);padding:1px 2px;border-radius:1px;box-shadow:inset 0 0 0 1px rgba(163,58,42,.25)}
+.cutmark{display:inline-block;width:3px;height:1.1em;margin:0 4px;background:var(--seal);vertical-align:-.18em;border-radius:1px}
+.ruler{position:relative;height:52px;margin:0 0 6px;border:1px solid var(--line);background:var(--paper);overflow:hidden}
+.bands{display:flex;height:100%;align-items:stretch}
+.band{position:relative;display:grid;place-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--muted);border-right:1px dashed var(--line-soft)}
+.band:last-child{border-right:0}
+.band.cut{background:repeating-linear-gradient(45deg,var(--seal-soft),var(--seal-soft) 6px,transparent 6px,transparent 12px)}
+.tick{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--seal);opacity:.85}
+.tick::after{content:"";position:absolute;top:0;left:-3px;width:6px;height:6px;background:var(--seal);border-radius:50%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;border-bottom:2px solid}
+.legend .k i{background:var(--jade-soft);border-color:var(--jade)}
+.legend .c i{background:var(--seal-soft);border-color:var(--seal)}
+
+/* ranking */
+.rank{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--surface)}
+.rank th,.rank td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.65}
+.rank th{background:var(--indigo-soft);font-size:11px;letter-spacing:.05em;font-weight:650;color:#1e3a54}
+.rank td.mono{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.rank .yes{color:var(--jade);font-weight:650}
+.rank .no{color:var(--seal);font-weight:650}
+.rank tr.hl td{background:var(--amber-soft)}
+
+/* chart */
+.chart{width:100%;height:auto;display:block;border:1px solid var(--line);background:var(--paper)}
+.chart .grid{stroke:var(--line-soft);stroke-width:1}
+.chart .axis{stroke:var(--line);stroke-width:1}
+.chart .lbl{font-family:var(--mono);font-size:9px;fill:var(--faint);letter-spacing:.04em}
+.chart .l-rec{fill:none;stroke:var(--indigo);stroke-width:2}
+.chart .l-acc{fill:none;stroke:var(--seal);stroke-width:2}
+.chart .l-tok{fill:none;stroke:var(--jade);stroke-width:1.6;stroke-dasharray:4 3}
+.chart .mark{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:2 3}
+
+/* wilson */
+.ci-row{display:grid;grid-template-columns:110px 1fr 132px;gap:12px;align-items:center;margin-bottom:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ci-track{position:relative;height:26px;background:var(--paper);border:1px solid var(--line)}
+.ci-span{position:absolute;top:8px;height:9px;background:var(--indigo-soft);border-left:1px solid var(--indigo);border-right:1px solid var(--indigo)}
+.ci-dot{position:absolute;top:5px;width:3px;height:15px;background:var(--indigo)}
+.ci-lbl{text-align:right;color:var(--ink-soft)}
+.verdict{font-family:var(--mono);font-size:11.5px;padding:9px 12px;border:1px solid var(--line);background:var(--paper);margin-top:6px;line-height:1.7}
+.verdict.sig{border-left:3px solid var(--jade);color:var(--jade)}
+.verdict.ns{border-left:3px solid var(--seal);color:var(--seal)}
+
+/* checklist */
+.check{border:1.5px solid var(--ink);background:var(--surface);padding:20px 22px;margin:28px 0}
+.check h3{margin:0 0 12px;font-size:17px;border:0;padding:0}
+.check ul{list-style:none;padding:0;margin:0}
+.check li{position:relative;padding-left:26px;margin:.55em 0;font-size:14px;line-height:1.8;color:var(--ink-soft)}
+.check li::before{content:"";position:absolute;left:0;top:.42em;width:13px;height:13px;border:1.5px solid var(--ink);background:var(--paper)}
+.check li b{color:var(--ink)}
+
+/* closing + footer */
+.closing{margin:56px 0 0;padding:34px 0 10px;border-top:1.5px solid var(--ink)}
+.closing h2{font-size:clamp(26px,3vw,36px);margin:0 0 14px;letter-spacing:-.02em}
+.closing p{font-size:16.5px;line-height:1.95;color:var(--ink-soft)}
+.sig{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);margin-top:24px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-block:26px 40px}
+.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint)}
+.foot a{color:var(--muted)}
+
+@media (max-width:980px){
+  .hero{grid-template-columns:1fr;gap:34px;padding-block:38px 30px}
+  .wrap{padding-inline:22px}
+  .stats-inner{grid-template-columns:repeat(2,1fr)}
+  .toc{grid-template-columns:1fr}
+  .ch-head{grid-template-columns:64px 1fr;gap:14px}
+}
+@media (max-width:560px){
+  .lead{font-size:17.5px}
+  .ch-body table{font-size:12.5px}
+  .ci-row{grid-template-columns:84px 1fr;gap:8px}
+  .ci-lbl{grid-column:2;text-align:left}
+  .ruler{height:44px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+@media print{.progress,.demo-ctrl,.seg{display:none}.demo,.callout,pre{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header class="masthead wrap">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M7 13a3 3 0 0 1 0-4l2-2a3 3 0 0 1 4 0" fill="none" stroke="#25476b" stroke-width="1.5"/><path d="M17 11a3 3 0 0 1 0 4l-2 2a3 3 0 0 1-4 0" fill="none" stroke="#25476b" stroke-width="1.5"/><circle cx="12" cy="12" r="1.4" fill="#a33a2a"/></svg>
+    </span>
+    造物手记 <small>VOL.13</small>
+  </div>
+  <div class="edition">
+    <span class="lab"><span class="lab-dot" aria-hidden="true"></span>RAG / 证据链</span>
+    <span>2026-11-09</span>
+    <span>单文件 · 零依赖</span>
+  </div>
+</header>
+
+<main>
+<section class="hero wrap">
+  <div>
+    <p class="eyebrow"><span>VOL.13</span> 检索增强生成 · 工程手册</p>
+    <h1>证据链 <em>RAG</em>
+      <span class="sub">从「问答」到「逐条留证」——把检索结果变成可验收的证据。</span>
+    </h1>
+    <div class="dek-wrap">
+      <p class="dek-tag">一句话</p>
+      <p class="dek">固定长度切分一定会切到某条限定语，只是概率高低；纯向量检索会把「话题相近」排到前面，让编号类证据沉底。这篇不报任何实验成绩，只给一套能自己跑出成绩的施工图。RAG 的门槛不在接上模型，在<em>证明它是对的</em>。</p>
+    </div>
+    <div class="hero-meta">
+      <span class="pill"><b>7</b> 章</span>
+      <span class="pill"><b>4</b> 枚小样</span>
+      <span class="pill"><b>7</b> 个验收指标</span>
+      <span class="pill">0 个编造指标</span>    </div>
+  </div>
+
+  <figure class="card" aria-label="证据卡示例">
+    <div class="card-head">
+      <b>F2 · 纹理与轮廓特征提取</b>
+      <span>CARD 03 / 05</span>
+    </div>
+    <dl style="margin:0">
+      <div class="card-row"><dt>对比文件</dt><dd><b>CN&nbsp;1&nbsp;145&nbsp;xxx&nbsp;xx&nbsp;A</b>　权利要求 1、说明书 [0042]</dd></div>
+      <div class="card-row"><dt>命中段落</dt><dd>说明书 [0042]　char&nbsp;1&nbsp;284–1&nbsp;517</dd></div>
+      <div class="card-row"><dt>判定</dt><dd><b>支持</b>（逐字公开了区域分割与两类特征的提取顺序）</dd></div>
+    </dl>
+    <p class="card-quote">「……对目标图像按区域分割后，分别提取纹理特征与轮廓特征，并记录各区域的边界坐标。」</p>
+    <div class="card-verdict">
+      <span class="verdict-tag">置信 0.87 · 单跳检索 · 已过验证器</span>
+      <span class="stamp">已核</span>
+    </div>
+  </figure>
+</section>
+
+<section class="stats">
+  <div class="stats-inner wrap" style="padding-inline:0">
+    <div class="stat"><b>7<span>章</span></b><small>可施工的方法</small></div>
+    <div class="stat"><b>4<span>枚</span></b><small>交互小样（含 1 枚真算）</small></div>
+    <div class="stat"><b>4<span>档</span></b><small>检索配置实验矩阵</small></div>
+    <div class="stat"><b>7<span>项</span></b><small>验收指标</small></div>
+  </div>
+</section>
+
+<figure class="ch-art wrap" style="margin-top:34px">
+  <div class="screen"><img src="assets/art/hero.webp" width="1280" height="853" alt="牛皮纸卷宗上一根红线把圈出的条款连到摊开文档中的某一段，末端盖着朱砂印章"/></div>
+  <figcaption><b>证据链的隐喻</b> —— 一根线，从条款连到它真正的出处；线断在哪，就是你系统失效的地方。</figcaption>
+</figure>
+
+<section class="opening wrap">
+  <div class="prose">
+    <p class="lead">大多数 RAG 项目死在同一个地方：它答得像对的。你问它「这份文件公开了哪些特征」，它给你一段读起来非常专业的总结，引用了三段原文，语气笃定；你抽查第一段，发现引用的段落里根本没有那个限定语。它没有撒谎，它只是把「话题相近」当成了「证据成立」。这个错误在演示里看不出来，在上线后每天发生几十次。</p>
+
+    <p>所以这篇不写「怎么把向量库接上大模型」。那部分一晚上就能做完，做完也就停在 Demo。这篇写的是更难的一半：<strong>怎么把一次检索变成一个可以判定、可以拒答、可以复算的证据</strong>。为了让这件事具体，我用一个真实存在的任务做载体——给定一条专利权利要求，从一批对比文件里找出每个技术特征对应的原文段落，逐条留证，找不到就拒答。</p>
+
+    <p>选它不是因为专利热，而是因为它把 RAG 的三个难点同时摆在桌面上：<em>检索要精确</em>（术语、编号、否定），<em>输出要可核</em>（引用必须真的支持结论），<em>错误要能拒</em>（没有证据时闭嘴）。这三点做到了，换成合同、财报、病历、内部规章，方法都能搬。</p>
+
+    <p class="scope">范围说明：本文是<strong>实验设计</strong>，不是实验结果。不含任何真实客户数据，也不含我自己的跑分；文中四枚小样里，只有 Wilson 区间那一枚是真实计算（公式可复算），其余三枚（切分几何、混合召回分值、预算曲线）的数值均为<strong>示意构造</strong>，用来让机制可见。真实指标请按第 6 章流程自行跑出，不要把示意值写进简历、汇报或任何对外材料。</p>
+
+    <div class="toc-head"><span>目录</span><span>7 CHAPTERS</span></div>
+    <nav class="toc" aria-label="目录">
+      <a href="#ch1"><i>01</i><span>任务的解剖<small>问答与证据绑定，单位不同，后果不同</small></span></a>
+      <a href="#ch2"><i>02</i><span>切分的边界<small>为什么固定长度切分会毁掉限定语</small></span></a>
+      <a href="#ch3"><i>03</i><span>召回的预算<small>向量、BM25、重排，谁补谁的漏</small></span></a>
+      <a href="#ch4"><i>04</i><span>判定的三级<small>支持、部分支持、无证据，以及拒答优先</small></span></a>
+      <a href="#ch5"><i>05</i><span>多步的算术<small>0.95 的五次方，和三道闸</small></span></a>
+      <a href="#ch6"><i>06</i><span>评测的实验<small>先冻结标注，再写代码；报区间不报单点</small></span></a>
+      <a href="#ch7"><i>07</i><span>到生产的距离<small>增量、权限、缓存、成本，以及 7 种失败模式</small></span></a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============ CH1 ============ -->
+<section class="chapter" id="ch1">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>01</b></div>
+    <div class="ch-title">
+      <h2>任务的解剖</h2>
+      <p>「问答」和「留证」看起来都是生成文本，但它们的最小单位不一样。单位一换，评测、拒答、追责全都跟着变。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p>先说清楚两者的差别。问答系统的最小单位是<strong>一个问题</strong>：输入问题，输出一段回答，好不好由人读一遍判断。证据链的最小单位是<strong>一个技术特征 × 一段原文 × 一个判定</strong>：一条权利要求先被拆成若干特征，每个特征都要找到一段能支撑它的原文，并且给出「支持 / 部分支持 / 无」的三级判定。</p>
+
+    <p>这个转换听起来只是粒度变细，实际上改变了三件事。</p>
+
+    <h3>一、评测从主观变成可算</h3>
+    <p>问答的评测通常只能到「读起来对不对」。证据链不一样：每个特征都有一个 gold 段落，系统有没有找到、引用得准不准、判定的三级对不对，全都可以逐条比对。也就是说，你能算出 <code>Feature Recall@5</code>，能算引用精确率，能算拒答正确率——这些数字可以放进对比表，也可以在下一次改动后复算。</p>
+
+    <h3>二、拒答从「不想答」变成「必须答」</h3>
+    <p>问答系统拒答是可选行为，模型愿意编就编。证据链里拒答是<em>一等公民</em>：如果 30 篇对比文件里确实没有任何一段公开某个特征，正确行为就是明确说「未找到证据」，而不是找一段最像的凑上去。这一条把幻觉从「质量问题」变成「判定错误」，可以被计数。</p>
+
+    <h3>三、错误从「感觉不对」变成「可定位」</h3>
+    <p>当输出是一张证据表，用户能直接看到：F3 引用的段落其实讲的是另一个步骤。错误定位到「特征 + 段落 + 判定」这一格，修复也就有了方向——是召回没找到，还是验证器放过了，还是切分把限定语切走了。</p>
+
+    <p>为了让后面的讨论有依托，先把输出结构定死。一个特征一条记录，字段不多，但每个字段都要能撑住追问：</p>
+
+<pre><code><span class="c">// 一条证据记录：字段少，但每个都要能被追问</span>
+{
+  <span class="k">"feature_id"</span>: <span class="s">"F2"</span>,
+  <span class="k">"feature_text"</span>: <span class="s">"对目标图像进行区域分割并提取纹理与轮廓特征"</span>,
+  <span class="k">"doc_id"</span>: <span class="s">"CN1145xxxxxA"</span>,
+  <span class="k">"section"</span>: <span class="s">"description"</span>,        <span class="c">// claims / description / embodiment</span>
+  <span class="k">"para_no"</span>: <span class="s">"0042"</span>,               <span class="c">// 段落编号，必须能对上原文</span>
+  <span class="k">"char_span"</span>: [<span class="s">1284</span>, <span class="s">1517</span>],          <span class="c">// 字符区间，便于高亮与复算</span>
+  <span class="k">"quote"</span>: <span class="s">"……对目标图像按区域分割后，分别提取纹理特征与轮廓特征……"</span>,
+  <span class="k">"verdict"</span>: <span class="s">"supported"</span>,           <span class="c">// supported / partial / none</span>
+  <span class="k">"confidence"</span>: <span class="s">0.87</span>,
+  <span class="k">"route"</span>: <span class="s">"hybrid+rerank"</span>,          <span class="c">// 哪条检索路径给出的</span>
+  <span class="k">"attempts"</span>: <span class="s">1</span>                      <span class="c">// 第几轮找到的，用于循环上限</span>
+}</code></pre>
+
+    <p>这里有两个字段容易被省掉，但省掉就失去可追性。<code>char_span</code> 让引用可以高亮、可以核对，而不是只给一个段落编号；<code>route</code> 让「这条路找到的」和「那条路找到的」可以分别统计，第 3 章的混合检索对比才有意义。</p>
+
+    <div class="callout">
+      <span class="tag">判断标准</span>
+      <p>如果换一个任务（合同条款、财报科目、病历诊断），你还能用同一套字段表达「哪一段支持哪一个结论」，说明抽象是对的；如果字段要重写，说明你其实在做另一件事，别硬套。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CH2 ============ -->
+<section class="chapter" id="ch2">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>02</b></div>
+    <div class="ch-title">
+      <h2>切分的边界</h2>
+      <p>切分不是预处理，是建模。切错一刀，后面所有检索都在为一个错误的前提服务。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <figure class="ch-art">
+      <div class="screen"><img src="assets/art/split.webp" width="1280" height="853" alt="牛皮纸文件条上一枚朱砂圆圈，靛蓝虚线切过圆中，刀尖停在切分点上"/></div>
+      <figcaption><b>切分即建模</b> —— 刀口落在哪，决定了这一段还能不能证明它本来要证明的事。</figcaption>
+    </figure>
+    <p>最常见的做法是固定长度切分：每 500 字一刀，重叠 100 字。它对博客和说明书够用，对法律文本是灾难。原因很具体——法律文本的语义边界是<strong>条款边界</strong>，不是字数边界。一个技术特征常常横跨「其特征在于」之前和之后：前半句是主体（对什么做什么），后半句是限定（用什么参数、什么条件、什么顺序）。固定长度一刀下去，最典型的结果是主体和限定被分到两个 chunk，检索时只召回其中一个，生成时补上另一半的「常识」，于是得到一个看起来完整、实际不存在的特征。</p>
+
+    <p>三种破坏方式值得单独记住：</p>
+
+    <table>
+      <thead><tr><th style="width:26%">破坏</th><th style="width:37%">怎么发生</th><th>后果</th></tr></thead>
+      <tbody>
+        <tr><td><b>切断特征</b></td><td>边界落在「其特征在于」与限定语之间</td><td>召回只拿到主体，生成自行补全限定，产生不存在的特征</td></tr>
+        <tr><td><b>孤立套话</b></td><td>「所述」「其特征在于」占满一个 chunk</td><td>高相似度但零信息，挤占 top-k 名额</td></tr>
+        <tr><td><b>跨段拼接</b></td><td>重叠区把上一段结尾和下一段开头连在一起</td><td>引用时给不出准确段落号，无法核对</td></tr>
+      </tbody>
+    </table>
+
+    <p>结构感知切分的做法是：先按文档结构切成权利要求、说明书、实施例、附图说明，再在段内按句切，最后把每段的 <code>doc_id / section / para_no / char_span</code> 一起存进索引。这样一来，召回的最小单位是一段有明确出处的原文，引用才可能精确到段落。</p>
+
+    <div class="demo" id="demo-split">
+      <div class="demo-head"><b>小样 01 · 切分边界</b><span>示意数据 · 纯前端计算</span></div>
+      <div class="demo-body">
+        <p style="font-size:13.5px;color:var(--muted);margin:0 0 12px">拖动切分长度，看多少个技术特征会被一刀切断。绿色完整，红色被切。</p>
+        <div class="demo-ctrl">
+          <label for="chunkLen">chunk 长度</label>
+          <input type="range" id="chunkLen" min="40" max="240" step="10" value="120" aria-label="切分长度"/>
+          <span id="chunkLenVal" class="pill" style="font-family:var(--mono)">120 字</span>
+          <span class="seg" role="group" aria-label="切分方式">
+            <button id="modeFixed" aria-pressed="true">固定长度</button>
+            <button id="modeStruct" aria-pressed="false">结构感知</button>
+          </span>
+        </div>
+        <div class="readout">
+          <div><b id="cutCount" class="hot">0</b><small>被切断的特征</small></div>
+          <div><b id="chunkCount">1</b><small>chunk 数</small></div>
+          <div><b id="intactRate" class="ok">100%</b><small>特征完整率</small></div>
+        </div>
+        <div class="claim-text" id="claimText"></div>
+        <div class="ruler" id="ruler" aria-hidden="true"><div class="bands" id="bands"></div></div>
+        <div class="legend">
+          <span class="k"><i></i>完整特征</span>
+          <span class="c"><i></i>被切断</span>
+          <span class="c"><i style="background:var(--seal);border:0;width:3px;height:12px"></i>红色竖线 = 切分点</span>
+        </div>
+      </div>
+    </div>
+
+    <p>把长度从 240 拖到 60，你会看到特征一个接一个被切开。真正要记住的不是「该用多少字」，而是：<strong>只要边界由字数决定，它就一定会切到某条限定语</strong>，只是概率高低。结构感知把这个概率从「取决于运气」降到「接近零」，代价是你得先解析文档结构——这一步在中文专利 PDF 上并不轻松，扫描件、双栏、表格、公式都会来捣乱。</p>
+
+    <div class="callout warn">
+      <span class="tag">这是示意图，不是实测</span>
+      <p>上面的切分小样用的是 5 条示例特征和一段固定文本，拖滑块得到的是<em>几何后果</em>（刀口有没有落在特征区间内），不是真实语料上的统计。真实特征完整率必须拿你自己的标注集去跑，代码逻辑与这里一致：判断 <code>边界 ∈ (特征起点, 特征终点)</code>。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CH3 ============ -->
+<section class="chapter" id="ch3">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>03</b></div>
+    <div class="ch-title">
+      <h2>召回的预算</h2>
+      <p>向量擅长「意思相近」，弱在编号、罕见术语、否定。一路 BM25 补上精确，一次重排负责收口。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p>纯向量检索的问题不是「不够强」，是它的相似度有自己的偏好。它偏爱语义相近：一段讲「相似度计算」的文字，跟「外观相似度评估」在向量空间里很近，即使它讲的是完全不相关的方法。它在三处系统性失灵：</p>
+
+    <ul>
+      <li><strong>编号与型号</strong>：<code>CN1145xxxxxA</code>、<code>[0042]</code> 这类 token，向量几乎不携带信息，但 BM25 一击即中。</li>
+      <li><strong>罕见术语</strong>：训练语料里少见的专业词，向量被邻居词稀释；BM25 靠字面精确匹配反而稳。</li>
+      <li><strong>否定与例外</strong>：「不包含」「除……之外」在向量里常被当成语气词，检索结果与肯定句几乎同分。</li>
+    </ul>
+
+    <p>所以实用的做法是混合召回：向量与 BM25 各取一路候选，合成一个列表，再交给重排。合成方式有两种常见选择——加权求和，或者 RRF（倒数排名融合）。RRF 只依赖名次，不依赖分值分布，跨检索器更稳：</p>
+
+<pre><code><span class="c"># RRF：只吃名次，不吃分值，跨检索器更稳</span>
+<span class="k">def</span> rrf(rankings, k=<span class="s">60</span>):
+    score = {}
+    <span class="k">for</span> ranking <span class="k">in</span> rankings:
+        <span class="k">for</span> rank, doc <span class="k">in</span> enumerate(ranking, start=<span class="s">1</span>):
+            score[doc] = score.get(doc, <span class="s">0.0</span>) + <span class="s">1.0</span> / (k + rank)
+    <span class="k">return</span> sorted(score.items(), key=<span class="k">lambda</span> x: -x[<span class="s">1</span>])
+
+<span class="c"># 加权求和：简单直观，但需要调权重、且各路分值尺度要可比</span>
+<span class="c"># score = 0.45 * vec_score + 0.55 * bm25_score</span></code></pre>
+
+    <p>重排是最后一道收口。cross-encoder 会把「查询 × 段落」拼起来打分，比双塔向量准得多，但成本也高得多，所以只对召回后的前 20–50 条做，不参与全库。下面这枚小样把三档配置放在一起，你能看到每一步既修好一些东西，也可能弄丢一些东西。</p>
+
+    <div class="demo" id="demo-hybrid">
+      <div class="demo-head"><b>小样 02 · 混合召回与重排</b><span>示意分值 · 固定语料</span></div>
+      <div class="demo-body">
+        <div class="demo-ctrl">
+          <span class="seg" role="group" aria-label="检索配置">
+            <button id="cfgVec" aria-pressed="true">纯向量</button>
+            <button id="cfgHyb" aria-pressed="false">+ BM25</button>
+            <button id="cfgRer" aria-pressed="false">+ 重排</button>
+          </span>
+        </div>
+        <div class="readout">
+          <div><b id="hybPrec" class="ok">33%</b><small>top-3 精确率</small></div>
+          <div><b id="hybHit" class="hot">1 / 3</b><small>top-3 中的有效证据</small></div>
+          <div><b id="hybNote" style="font-size:13px;line-height:1.5">—</b><small>这一步发生了什么</small></div>
+        </div>
+        <table class="rank">
+          <thead><tr><th style="width:44px">#</th><th style="width:104px">段落</th><th style="width:78px">判定</th><th>内容与问题</th></tr></thead>
+          <tbody id="hybBody"></tbody>
+        </table>
+        <p class="table-note" style="margin:12px 0 0">分值为示意；混合档使用 0.45×向量 + 0.55×BM25，重排档按 cross-encoder 分值截取 top-3。</p>
+      </div>
+    </div>
+
+    <p>请重点看两件事。第一，纯向量的 top-3 里有两段是「话题很近但没有公开任何特征」——这种结果最危险，因为它读起来最像正确答案。第二，加 BM25 之后，靠编号命中的那段从第 6 名跳到第 1 名，但同时挤掉了原本正确的一段；加重排之后，三路的信息才真正合到一起，top-3 全对。</p>
+
+    <div class="callout warn">
+      <span class="tag">这是分值示意，不是实测</span>
+      <p>上表六条段落的向量分、BM25 分与重排分都是我手写的，目的是让「加一路会挤掉另一路」这件事看得见。真实的分值分布不会这么干净。要用它，就把 <code>PASSAGES</code> 换成你跑出来的候选段落与真实分值，逻辑不用改。</p>
+    </div>
+
+    <div class="callout jade">
+      <span class="tag">结论</span>
+      <p>混合检索不是「多一路更保险」，而是「多一路会改变名单」。所以每次加一路，都要重新跑一遍评测，而不是凭感觉觉得应该更好。这也是第 6 章那张实验矩阵存在的理由。</p>
+    </div>
+
+    <h3>k 不是一个越大越好的数字</h3>
+    <p>召回几段给模型看，是一个预算问题，不是「多多益善」。加得越多，召回率单调上升，但答案准确率会在某个点之后开始下降——多出来的段落里，总有几段话题相近却不支撑结论，模型被它们带偏。同时 token 与成本线性增长。所以 k 要选在「边际收益开始转负」之前。</p>
+
+    <div class="demo" id="demo-budget">
+      <div class="demo-head"><b>小样 03 · 检索预算</b><span>示意曲线 · 前端计算</span></div>
+      <div class="demo-body">
+        <div class="demo-ctrl">
+          <label for="bk">召回段数 k</label>
+          <input type="range" id="bk" min="1" max="20" step="1" value="4" aria-label="召回段数"/>
+          <span id="bkVal" class="pill" style="font-family:var(--mono)">k = 4</span>
+        </div>
+        <div class="readout">
+          <div><b id="bRec" class="ok">81%</b><small>特征召回率</small></div>
+          <div><b id="bAcc">69%</b><small>答案准确率</small></div>
+          <div><b id="bTok">1,240</b><small>平均上下文 token</small></div>
+          <div><b id="bCost">¥0.0025</b><small>单次生成成本</small></div>
+        </div>
+        <svg id="budgetSvg" class="chart" viewBox="0 0 640 230" role="img" aria-label="召回率、答案准确率随 k 的变化曲线"></svg>
+        <p class="table-note" style="margin:10px 0 0"><b>这条曲线是示意，不是实测</b>：召回率用 0.97×(1−e^(−k/2.2)) 生成，准确率用一条见顶回落的经验式生成，只为演示「k 不是越大越好」的形状。真实曲线必须自行实测。</p>
+      </div>
+    </div>
+
+    <p>注意那条红线：它先升后降。上升段是「多给几段，多找到一点证据」；下降段是「多给的段落开始干扰判断」。两条线的差值在 k≈6 附近最大，那就是这个场景下的合理预算。把这个结论写进 README 比写「我们用了 top-10」有用得多——前者说明你测过，后者只说明你抄了个习惯。</p>
+  </div>
+</section>
+
+<!-- ============ CH4 ============ -->
+<section class="chapter" id="ch4">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>04</b></div>
+    <div class="ch-title">
+      <h2>判定的三级</h2>
+      <p>支持、部分支持、无证据。第三个才是最难写的那个分支。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p>有了候选段落，下一步是判定：这段文字到底有没有公开这个技术特征。这里最容易犯的错是把判定做成二值——「像」就给 1，「不像」就给 0——然后在阈值上反复调。更好的做法是三级，因为它对应三种完全不同的动作：</p>
+
+    <table>
+      <thead><tr><th style="width:18%">判定</th><th style="width:34%">含义</th><th style="width:22%">动作</th><th>典型误判</th></tr></thead>
+      <tbody>
+        <tr><td><b>支持</b></td><td>段落逐字或等价地公开了该特征的全部限定</td><td>留证，计入召回</td><td>把「同类方法」当成「同一方法」</td></tr>
+        <tr><td><b>部分支持</b></td><td>公开了主体，但缺少关键限定（参数、顺序、范围）</td><td>留证但不计入精确率，进人工复核</td><td>为了凑齐证据，把部分当全部</td></tr>
+        <tr><td><b>无证据</b></td><td>检索范围内没有任何段落公开该特征</td><td>明确拒答，不出结论</td><td>用最相似的一段硬凑</td></tr>
+      </tbody>
+    </table>
+
+    <p>为什么「部分支持」必须单列？因为它是最常见的真实情况，也是幻觉的主要来源。一段文字讲了「对图像进行区域分割」，但没讲「提取纹理与轮廓特征」——它支持了一半。如果系统把它算作支持，引用精确率会虚高，用户看到引文与结论不符，信任立刻崩塌。把它单列出来，精确率只统计完全支持，幻觉率才可能被真正压下去。</p>
+
+    <h3>拒答优先</h3>
+    <p>在证据类任务里，「不知道」是合格答案，「编一个」是不合格答案。所以判定阈值不应该追求「尽量给出结论」，而应该追求「结论必须站得住」。工程上的做法是三重条件取「或」——任一不满足就拒答：</p>
+
+    <ol>
+      <li><strong>检索门槛</strong>：最高分低于阈值，或 top-k 分值过于平坦（没有明显的第一名）。</li>
+      <li><strong>判定门槛</strong>：验证器给出的判定不是「支持」。</li>
+      <li><strong>一致性门槛</strong>：同一特征在两轮独立查询里指向不同段落，且互相矛盾。</li>
+    </ol>
+
+    <p>阈值本身不应该拍脑袋。做法是在验证集上扫一遍阈值，画一条权衡曲线：横轴是阈值，纵轴两条线——错误作答率（把无证据判成有）和错误拒答率（把有证据判成无）。两条线的交点附近是可用区间，具体取哪一点取决于业务代价：漏检一个特征的代价如果高于多拒答一次，就选偏保守的一侧。</p>
+
+    <div class="callout">
+      <span class="tag">可直接用的规则</span>
+      <p>对外输出时，把「未找到证据」写成具体句子，不要写成空白或「N/A」：<em>「在本次检索的 30 篇对比文件中，未找到公开 F4「权重由区域面积确定」的段落。」</em>这句话本身就是一个可验收的结论，用户能据此判断是检索范围不够，还是真的没有。</p>
+    </div>
+
+    <p>还有一个细节值得单独说：判定器（verifier）的提示词要让它<strong>引用原句</strong>，而不是只给标签。要求它输出「判定 + 支撑原句 + 缺失的限定」，你才能判断它是真读了还是顺着问题附和。这一步几乎不增加成本，却能把大量「看起来对」的判定筛出来。</p>
+  </div>
+</section>
+
+<!-- ============ CH5 ============ -->
+<section class="chapter" id="ch5">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>05</b></div>
+    <div class="ch-title">
+      <h2>多步的算术</h2>
+      <p>单步 95% 听起来很高。五个特征串起来，只剩 77%。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p>证据链天然是多步的：拆特征、生成查询、召回、重排、判定、汇总。每一步都有成功率，而端到端成功率是它们的乘积。这不是悲观假设，是乘法：</p>
+
+    <table>
+      <thead><tr><th>步数</th><th>单步 0.95</th><th>单步 0.92</th><th>单步 0.99</th></tr></thead>
+      <tbody>
+        <tr><td>3</td><td>0.857</td><td>0.779</td><td>0.970</td></tr>
+        <tr><td>5</td><td><b>0.774</b></td><td>0.659</td><td>0.951</td></tr>
+        <tr><td>8</td><td>0.663</td><td>0.513</td><td>0.923</td></tr>
+        <tr><td>10</td><td>0.599</td><td>0.434</td><td>0.904</td></tr>
+      </tbody>
+    </table>
+    <p class="table-note">0.95 / 0.92 / 0.99 为各步典型量级示意；真实值需按第 6 章分步统计。</p>
+
+    <p>结论不是「不要多步」，而是「多步必须有闸」。三道闸，按性价比排序：</p>
+
+    <h3>闸一：验证器</h3>
+    <p>在汇总之前，对每个「特征 × 段落」单独问一次：这段是否公开了该特征？输出三级判定加支撑原句。它的作用不是提高正确率，而是把错误<strong>拦在输出之前</strong>，变成拒答而不是错答。代价是每特征一次额外调用，量级可控。</p>
+
+    <h3>闸二：循环上限</h3>
+    <p>每个特征最多检索 3 轮；如果新一轮的查询与上一轮重复，或召回结果没有新增段落，立刻停。这一条专门防 Tool Loop——模型不断改写查询、不断拿到同一批结果、不断说「再试一次」。没有上限，一次失败会烧掉几十次调用和几分钟。</p>
+
+<pre><code><span class="c"># 每步即事务：先落日志，再执行；重跑不重放已判定</span>
+<span class="k">for</span> feat <span class="k">in</span> features:
+    <span class="k">if</span> ledger.has(feat.id, <span class="s">"verdict"</span>):      <span class="c"># 幂等：已判定就跳过</span>
+        <span class="k">continue</span>
+    seen = <span class="k">set</span>()
+    <span class="k">for</span> attempt <span class="k">in</span> <span class="k">range</span>(<span class="s">1</span>, <span class="s">4</span>):                <span class="c"># 闸二：最多 3 轮</span>
+        q = build_query(feat, attempt)
+        <span class="k">if</span> q <span class="k">in</span> seen: <span class="k">break</span>                 <span class="c"># 查询重复即停</span>
+        seen.add(q)
+        hits = retrieve(q, k=<span class="s">8</span>)
+        <span class="k">if</span> <span class="k">not</span> hits - ledger.seen_docs: <span class="k">break</span>  <span class="c"># 无新增即停</span>
+        v = verify(feat, hits)                 <span class="c"># 闸一：三级判定</span>
+        ledger.write(feat.id, v)               <span class="c"># 先写日志，再决定去留</span>
+        <span class="k">if</span> v.verdict == <span class="s">"supported"</span>: <span class="k">break</span>
+    <span class="k">else</span>:
+        escalate(feat)                         <span class="c"># 闸三：人工接管队列</span></code></pre>
+
+    <h3>闸三：人工接管</h3>
+    <p>置信度低于阈值、判定为「部分支持」、或多轮仍未找到的特征，进复核队列，由人看证据卡决定。关键设计是：<strong>人工已经判定过的结果不能被重跑覆盖</strong>。这条听起来像细节，实际是可用与不可用的分界线——如果每次重跑都把人的结论冲掉，复核就等于白做。</p>
+
+    <div class="callout warn">
+      <span class="tag">真实事故的形状</span>
+      <p>多步系统最典型的故障不是「算错」，而是「重复劳动」：进程重启后从头再来，把已经发出去的调用重放一遍，成本翻倍、结果还可能不一致。所以日志要先写后做，状态要能从中断处恢复，已完成的步骤不重放。这一条比任何提示词技巧都重要。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CH6 ============ -->
+<section class="chapter" id="ch6">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>06</b></div>
+    <div class="ch-title">
+      <h2>评测的实验</h2>
+      <p>先冻结标注，再写代码。这个顺序是防作弊的唯一办法。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <figure class="ch-art">
+      <div class="screen"><img src="assets/art/eval.webp" width="1280" height="853" alt="牛皮纸上的黄铜游标卡尺横跨一条带红色置信区间的小纸条，上方是手绘的正态曲线，旁边是一叠画着计数刻痕的卡片"/></div>
+      <figcaption><b>评测是实验</b> —— 卡尺量的是区间，不是那个点。小样本的点估计会骗人。</figcaption>
+    </figure>
+    <p>评测最容易出的问题不是算错，是<strong>边做边改标准</strong>：系统跑出 60%，于是把标注里「太难的」样本删掉两条，变成 72%。这种数字写进简历，面试官问一句「你的标注是怎么冻结的」就穿。所以流程必须是：标注先做完、先冻结、先记录，代码之后才写。</p>
+
+    <h3>标注长什么样</h3>
+    <p>20 组 claim–feature 标注，每组展开成 4–6 个技术特征，合计约 100 个特征级样本。每组要写清楚：</p>
+
+    <ul>
+      <li>权利要求原文（截图或文本，标来源与抓取日期）</li>
+      <li>拆出的技术特征列表（这是主观动作，要写下拆分依据）</li>
+      <li>每个特征的 gold 段落：<code>doc_id + para_no + char_span + 原句</code></li>
+      <li>是否「无证据」——务必留 4–6 组，专门测拒答</li>
+      <li>标注人、标注时间（同一批标注不要跨天，避免标准漂移）</li>
+    </ul>
+
+    <h3>七个指标</h3>
+
+    <table>
+      <thead><tr><th style="width:22%">指标</th><th style="width:44%">定义</th><th>注意</th></tr></thead>
+      <tbody>
+        <tr><td><b>Feature Recall@k</b></td><td>每个特征，top-k 是否含 gold 段落；命中特征数 / 总特征数</td><td>按特征计，不按问题计</td></tr>
+        <tr><td><b>Citation Precision</b></td><td>系统引用的段落里，真正支持该特征的比例</td><td>「部分支持」不计入分子</td></tr>
+        <tr><td><b>Citation Recall</b></td><td>gold 段落中被系统引用的比例</td><td>引多了扣精确率，引少了扣召回</td></tr>
+        <tr><td><b>Refusal Accuracy</b></td><td>无证据正确拒答 + 有证据正确作答，占总数的比例</td><td>必须包含两类错误，不能只算一类</td></tr>
+        <tr><td><b>Faithfulness</b></td><td>生成内容不超出被引段落的程度</td><td>LLM judge + 人工抽检 10 条</td></tr>
+        <tr><td><b>P95 延迟</b></td><td>端到端耗时的 95 分位</td><td>均值会掩盖长尾</td></tr>
+        <tr><td><b>单次成本</b></td><td>token 数 × 单价，按查询统计</td><td>区分检索侧（本地）与生成侧（API）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>报区间，不报单点</h3>
+    <p>20 组标注意味着单个指标只有几十个样本。这个量级下，3/19 和 5/19 看起来差了 67%，实际上可能完全不可区分。用 Wilson 区间算一下就知道：3/19 的 95% 区间约是 <b>[5.5%, 37.6%]</b>，5/19 约是 <b>[11.8%, 48.8%]</b>，两段区间大面积重叠——<em>这个差异不显著</em>。如果你在报告里写「提升了 67%」，懂统计的面试官会立刻追问样本量。</p>
+
+    <div class="demo" id="demo-wilson">
+      <div class="demo-head"><b>小样 04 · Wilson 区间</b><span>真实计算 · 无示意值</span></div>
+      <div class="demo-body">
+        <div class="demo-ctrl">
+          <label for="wk">命中 k</label><input class="num" type="number" id="wk" value="3" min="0" step="1"/>
+          <label for="wn">样本 n</label><input class="num" type="number" id="wn" value="19" min="1" step="1"/>
+          <span class="seg" role="group" aria-label="预设">
+            <button data-k="3" data-n="19" aria-pressed="true">3 / 19</button>
+            <button data-k="5" data-n="19" aria-pressed="false">5 / 19</button>
+            <button data-k="12" data-n="20" aria-pressed="false">12 / 20</button>
+          </span>
+        </div>
+        <div class="readout">
+          <div><b id="wPoint">15.8%</b><small>点估计</small></div>
+          <div><b id="wLow" class="ok">5.5%</b><small>区间下界</small></div>
+          <div><b id="wHigh" class="ok">37.6%</b><small>区间上界</small></div>
+          <div><b id="wWidth" class="hot">32.1</b><small>区间宽度（百分点）</small></div>        </div>
+        <div id="ciRows" style="margin-bottom:6px"></div>
+        <div class="verdict ns" id="wVerdict">两段区间重叠 → 差异不显著</div>
+        <p class="table-note" style="margin:12px 0 0">Wilson 95% 区间，z = 1.96；用于小样本比例估计，比正态近似更稳。</p>
+      </div>
+    </div>
+
+    <h3>实验矩阵，而不是一张成绩单</h3>
+    <p>四档配置的意义不在于「最后一档最高」，而在于<strong>每一档隔离一个变量</strong>。跑完要能回答：如果只保留混合召回、不做重排，损失多少？如果去掉验证器，错误流出会增加多少？这张矩阵没跑完，就不要对外说「效果提升了」。</p>
+
+    <table>
+      <thead><tr><th style="width:16%">配置</th><th style="width:26%">隔离的变量</th><th style="width:28%">预期变化</th><th>若不符合，说明什么</th></tr></thead>
+      <tbody>
+        <tr><td>① 纯向量</td><td>基线</td><td>—</td><td>语料里缺少编号/术语类证据，任务设计偏简单</td></tr>
+        <tr><td>② + BM25</td><td>精确匹配</td><td>编号类召回上升，语义类可能下降</td><td>权重或分词有问题，中文需要先验证分词粒度</td></tr>
+        <tr><td>③ + 重排</td><td>精排能力</td><td>精确率上升，延迟上升</td><td>重排模型与语料不匹配，或候选集太小</td></tr>
+        <tr><td>④ + 验证器</td><td>拒答能力</td><td>错误解答下降，拒答率上升</td><td>验证器在附和问题，需检查提示词是否要求引用原句</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout jade">
+      <span class="tag">写报告的方式</span>
+      <p>不要写「Recall 从 A% 提升到 B%」这样一句结论——下面这行里的数字全是占位符，换成你跑出来的值：<br>
+      <em>「Recall@5 由 __._%（95% CI __–__）提升到 __._%（95% CI __–__），n=__ 特征样本；提升主要来自编号类证据。」</em><br>
+      带上区间、样本量和归因，这句话才站得住；只报两个点，等于请对方来质疑你。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CH7 ============ -->
+<section class="chapter" id="ch7">
+  <div class="ch-head">
+    <div class="ch-num">CH<b>07</b></div>
+    <div class="ch-title">
+      <h2>到生产的距离</h2>
+      <p>Demo 跑通只完成了一半。另一半在增量、权限、成本和故障恢复里。</p>
+    </div>
+  </div>
+  <div class="ch-body">
+    <p>从「能在本机跑」到「能给别人用」，中间隔着五件事。每一件都不难，但漏掉任何一件，系统就只能在演示里活着。</p>
+
+    <table>
+      <thead><tr><th style="width:18%">事</th><th style="width:44%">要解决的问题</th><th>最小可用做法</th></tr></thead>
+      <tbody>
+        <tr><td><b>增量索引</b></td><td>新文档进来要不要全量重建</td><td>按 <code>doc_id + 版本号</code> 写入，旧版本软删除；BM25 与向量库同步游标</td></tr>
+        <tr><td><b>权限</b></td><td>同一套索引，不同人能看到不同文档</td><td>检索前注入租户/密级过滤条件，不要检索后再删结果</td></tr>
+        <tr><td><b>缓存</b></td><td>同一特征重复查询</td><td>按「特征文本 + 索引版本」做键；索引一变即失效</td></tr>
+        <tr><td><b>成本预算</b></td><td>多步调用叠加</td><td>每查询预算上限，超预算转拒答或降级到只检索不生成</td></tr>
+        <tr><td><b>失败恢复</b></td><td>进程重启、上游超时</td><td>每步落日志、状态可恢复、已派发动作不重放</td></tr>
+      </tbody>
+    </table>
+
+    <h3>七种失败模式</h3>
+    <p>下面这张表是自查用的。每一条都对应一个可观测信号，出事时能立刻定位，而不是「感觉不太对」。</p>
+
+    <table>
+      <thead><tr><th style="width:24%">现象</th><th style="width:38%">根因</th><th>可观测信号</th></tr></thead>
+      <tbody>
+        <tr><td>引用段落不支撑结论</td><td>切分切断限定语</td><td>引文与判定的字符区间重叠率低</td></tr>
+        <tr><td>top-3 全是「话题相近」</td><td>只有向量，无精确召回</td><td>BM25 排名与向量排名相关性低</td></tr>
+        <tr><td>无证据却给了结论</td><td>验证器在附和</td><td>判定为支持但无支撑原句</td></tr>
+        <tr><td>同一特征两轮结果不一致</td><td>查询改写漂移</td><td>同特征跨轮段落集合交并比低</td></tr>
+        <tr><td>一次查询成本异常高</td><td>Tool Loop 未设上限</td><td>单特征调用次数 > 3</td></tr>
+        <tr><td>人工复核被覆盖</td><td>重跑未读已有判定</td><td>复核记录版本号被覆盖</td></tr>
+        <tr><td>延迟长尾严重</td><td>重排范围过大或重复检索</td><td>P95 远高于 P50，且调用数偏高</td></tr>
+      </tbody>
+    </table>
+
+    <div class="check">
+      <h3>上线前验收清单</h3>
+      <ul>
+        <li>标注已冻结，记录了标注人与时间，<b>代码写在标注之后</b></li>
+        <li>20 组样本中含 4–6 组「无证据」，拒答率与错误作答率<b>分开统计</b></li>
+        <li>四档配置都有数据，且能说清每一档隔离了什么变量</li>
+        <li>所有指标带<b>置信区间</b>与样本量，不写单点对比</li>
+        <li>每条证据能给出 <code>doc_id + para_no + char_span + 原句</code></li>
+        <li>「部分支持」单独计数，未混入精确率</li>
+        <li>每个特征有查询轮次上限，重复查询与无新增会自动停</li>
+        <li>已判定结果可持久化，重跑不重放、不覆盖人工结论</li>
+        <li>单次查询有成本上限，超限有降级路径</li>
+        <li>至少 3 个失败案例写进 README，并附复现方式</li>
+      </ul>
+    </div>
+
+    <div class="callout">
+      <span class="tag">一句提醒</span>
+      <p>如果你只有一周，就把前端砍掉，保留「解析 → 切分 → 混合召回 → 判定 → 评测」这条线，用命令行演示。证据链的价值在可核，不在界面好看。</p>
+    </div>
+  </div>
+</section>
+
+<section class="closing wrap">
+  <div class="prose">
+    <h2>把「像对的」变成「可核的」</h2>
+    <p>RAG 的门槛从来不在接上模型，那一步一晚上就能做完。真正的门槛是：当有人问「你凭什么这么说」，你能把证据、判定、出处、以及这个判定有多可信，一起摊在桌上。</p>
+    <p>这篇里的每一章其实都在回答同一个问题——<strong>怎么让系统在不知道的时候说不知道</strong>。结构切分是为了让证据有明确边界；混合召回是为了让精确的东西不被语义淹没；三级判定是为了让「差不多」不能冒充「就是」；多步的闸是为了让错误停在输出之前；评测的区间是为了让你自己不被自己的数字骗。</p>
+    <p>下一篇我会把这套东西跑成真实数据：一批公开专利、一批特征样本、四档配置、四张带区间的对比表，以及一份能复现的失败案例集。在那之前，这篇可以当成施工图用——第 7 章那张清单，就是验收标准。</p>
+    <p class="sig">STARRYSEA1412 · 2026-11-09 · 造物手记 VOL.13</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>《证据链 RAG》· 造物手记 VOL.13</span>
+    <span>单文件站点 · 零构建 · 零依赖 · 字体 LXGW WenKai（OFL）</span>
+    <span><a href="https://github.com/StarrySea1412">GitHub</a> · <a href="https://gitee.com/starry-sea-1412">Gitee</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- progress ---------- */
+  var bar = document.getElementById("progress");
+  function onScroll(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? h.scrollTop / max : 0;
+    bar.style.transform = "scaleX(" + p.toFixed(4) + ")";
+  }
+  window.addEventListener("scroll", onScroll, {passive:true});
+  onScroll();
+
+  /* ---------- demo 01: split ---------- */
+  var FEATURES = [
+    "一种基于多模态特征融合的外观相似度评估方法",
+    "其特征在于，对目标图像进行区域分割并提取纹理与轮廓特征",
+    "将所述纹理特征与轮廓特征分别映射至统一向量空间",
+    "采用加权余弦距离计算相似度，权重由区域面积确定",
+    "当相似度超过预设阈值时，输出风险等级与对应证据区域"
+  ];
+  var JOIN = "，";
+  var fullText = "";
+  var ranges = [];
+  FEATURES.forEach(function(t, i){
+    var s = fullText.length;
+    fullText += t;
+    ranges.push([s, fullText.length]);
+    if (i < FEATURES.length - 1) fullText += JOIN;
+  });
+  var TOTAL = fullText.length;
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(ch){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+    });
+  }
+
+  var claimEl = document.getElementById("claimText");
+  var bandsEl = document.getElementById("bands");
+  var rulerEl = document.getElementById("ruler");
+  var cutCountEl = document.getElementById("cutCount");
+  var chunkCountEl = document.getElementById("chunkCount");
+  var intactRateEl = document.getElementById("intactRate");
+  var lenEl = document.getElementById("chunkLen");
+  var lenVal = document.getElementById("chunkLenVal");
+  var mFixed = document.getElementById("modeFixed");
+  var mStruct = document.getElementById("modeStruct");
+  var mode = "fixed";
+
+  function renderSplit(){
+    var L = parseInt(lenEl.value, 10);
+    lenVal.textContent = L + " 字";
+
+    // boundaries
+    var bounds = [];
+    var chunkCount = 1;
+    if (mode === "fixed"){
+      for (var b = L; b < TOTAL; b += L){ bounds.push(b); chunkCount++; }
+    } else {
+      // structural: break only between features
+      var pos = 0;
+      for (var i = 0; i < ranges.length - 1; i++){
+        pos = ranges[i][1] + 1; // after join char
+        bounds.push(pos);
+        chunkCount++;
+      }
+    }
+
+    // which features are cut
+    var cut = ranges.map(function(r){
+      return bounds.some(function(b){ return b > r[0] && b < r[1]; });
+    });
+
+    // text with highlight; 在切断处插入剪刀标记
+    var html = "";
+    FEATURES.forEach(function(t, i){
+      var r = ranges[i];
+      var cls = cut[i] ? "seg-cut" : "seg-ok";
+      var inner = "";
+      var localBounds = bounds.filter(function(b){ return b > r[0] && b < r[1]; });
+      if (!localBounds.length){
+        inner = t;
+      } else {
+        var prev = r[0];
+        localBounds.forEach(function(b){
+          inner += escapeHtml(t.slice(prev - r[0], b - r[0]));
+          inner += '<span class="cutmark" title="切分点"></span>';
+          prev = b;
+        });
+        inner += escapeHtml(t.slice(prev - r[0]));
+      }
+      html += '<span class="' + cls + '">' + inner + "</span>";
+      if (i < FEATURES.length - 1) html += '<span style="color:var(--faint)">' + JOIN + "</span>";
+    });
+    claimEl.innerHTML = html;
+
+    // bands
+    var bands = "";
+    FEATURES.forEach(function(t, i){
+      var w = (ranges[i][1] - ranges[i][0] + (i < FEATURES.length - 1 ? 1 : 0)) / TOTAL * 100;
+      bands += '<div class="band' + (cut[i] ? " cut" : "") + '" style="width:' + w.toFixed(3) + '%">F' + (i + 1) + "</div>";
+    });
+    bandsEl.innerHTML = bands;
+
+    // ticks
+    Array.prototype.slice.call(rulerEl.querySelectorAll(".tick")).forEach(function(n){ n.remove(); });
+    bounds.forEach(function(b){
+      var tick = document.createElement("div");
+      tick.className = "tick";
+      tick.style.left = (b / TOTAL * 100).toFixed(3) + "%";
+      rulerEl.appendChild(tick);
+    });
+
+    var c = cut.filter(Boolean).length;
+    cutCountEl.textContent = c;
+    chunkCountEl.textContent = chunkCount;
+    intactRateEl.textContent = Math.round((FEATURES.length - c) / FEATURES.length * 100) + "%";
+    cutCountEl.className = c > 0 ? "hot" : "ok";
+  }
+
+  lenEl.addEventListener("input", renderSplit);
+  mFixed.addEventListener("click", function(){
+    mode = "fixed"; mFixed.setAttribute("aria-pressed", "true"); mStruct.setAttribute("aria-pressed", "false"); renderSplit();
+  });
+  mStruct.addEventListener("click", function(){
+    mode = "struct"; mStruct.setAttribute("aria-pressed", "true"); mFixed.setAttribute("aria-pressed", "false"); renderSplit();
+  });
+  renderSplit();
+
+  /* ---------- demo 02: hybrid ---------- */
+  var PASSAGES = [
+    {id:"P1", vec:0.81, bm25:0.35, rerank:0.78, ok:true,
+     note:"公开了 F2 的区域分割与纹理/轮廓提取顺序"},
+    {id:"P2", vec:0.62, bm25:0.71, rerank:0.83, ok:true,
+     note:"公开了 F4「权重由区域面积确定」"},
+    {id:"P3", vec:0.44, bm25:0.88, rerank:0.69, ok:true,
+     note:"编号命中 CN1145xxxxxA；纯向量排到第 6"},
+    {id:"P4", vec:0.79, bm25:0.22, rerank:0.31, ok:false,
+     note:"话题相近（审查指南/创造性），未公开任何特征"},
+    {id:"P5", vec:0.77, bm25:0.40, rerank:0.44, ok:false,
+     note:"同词不同义：图像超分里的「多尺度融合」"},
+    {id:"P6", vec:0.55, bm25:0.29, rerank:0.22, ok:false,
+     note:"无关：缺陷检测"}
+  ];
+
+  var hybBody = document.getElementById("hybBody");
+  var hybPrec = document.getElementById("hybPrec");
+  var hybHit = document.getElementById("hybHit");
+  var hybNote = document.getElementById("hybNote");
+
+  var NOTES = {
+    vec: "语义相近但不支持结论，占掉两个名额",
+    hyb: "编号证据从第 6 进到第 1，但挤掉了 P1",
+    rer: "三路信息合流，top-3 全部有效"
+  };
+
+  function topBy(key){
+    return PASSAGES.slice().sort(function(a, b){ return b[key] - a[key]; }).slice(0, 3);
+  }
+  function hybridList(){
+    return PASSAGES.slice().map(function(p){
+      return {p:p, s:0.45 * p.vec + 0.55 * p.bm25};
+    }).sort(function(a, b){ return b.s - a.s; }).slice(0, 3).map(function(x){ return x.p; });
+  }
+
+  function renderHybrid(kind){
+    var list, scores;
+    if (kind === "vec"){ list = topBy("vec"); scores = list.map(function(p){ return p.vec.toFixed(2); }); }
+    else if (kind === "hyb"){
+      list = hybridList();
+      scores = list.map(function(p){ return (0.45 * p.vec + 0.55 * p.bm25).toFixed(3); });
+    } else { list = topBy("rerank"); scores = list.map(function(p){ return p.rerank.toFixed(2); }); }
+
+    var hit = list.filter(function(p){ return p.ok; }).length;
+    var rows = "";
+    list.forEach(function(p, i){
+      rows += "<tr" + (p.ok ? "" : ' class="hl"') + ">" +
+        "<td class='mono'>" + (i + 1) + "</td>" +
+        "<td class='mono'>" + p.id + " <span style='color:var(--faint)'>" + scores[i] + "</span></td>" +
+        "<td class='" + (p.ok ? "yes" : "no") + "'>" + (p.ok ? "有效证据" : "不支撑") + "</td>" +
+        "<td>" + p.note + "</td></tr>";
+    });
+    hybBody.innerHTML = rows;
+    hybPrec.textContent = Math.round(hit / 3 * 100) + "%";
+    hybPrec.className = hit === 3 ? "ok" : (hit === 2 ? "" : "hot");
+    hybHit.textContent = hit + " / 3";
+    hybHit.className = hit === 3 ? "ok" : "hot";
+    hybNote.textContent = NOTES[kind];
+    hybNote.style.fontSize = "13px";
+  }
+
+  var cVec = document.getElementById("cfgVec"),
+      cHyb = document.getElementById("cfgHyb"),
+      cRer = document.getElementById("cfgRer");
+  function setCfg(kind, btn){
+    [cVec, cHyb, cRer].forEach(function(b){ b.setAttribute("aria-pressed", "false"); });
+    btn.setAttribute("aria-pressed", "true");
+    renderHybrid(kind);
+  }
+  cVec.addEventListener("click", function(){ setCfg("vec", cVec); });
+  cHyb.addEventListener("click", function(){ setCfg("hyb", cHyb); });
+  cRer.addEventListener("click", function(){ setCfg("rer", cRer); });
+  renderHybrid("vec");
+
+  /* ---------- demo 03: budget ---------- */
+  // data for k = 1..20 (illustrative)
+  function recallAt(k){ return 0.97 * (1 - Math.exp(-k / 2.2)); }
+  function accAt(k){ return 0.30 + 0.44 * (1 - Math.exp(-k / 1.9)) - 0.008 * Math.max(0, k - 6); }
+  function tokAt(k){ return 400 + 210 * k; }
+
+  var budgetSvg = document.getElementById("budgetSvg");
+  var bK = document.getElementById("bk");
+  var bKVal = document.getElementById("bkVal");
+  var bRec = document.getElementById("bRec");
+  var bAcc = document.getElementById("bAcc");
+  var bTok = document.getElementById("bTok");
+  var bCost = document.getElementById("bCost");
+
+  function drawBudget(cur){
+    var W = 640, H = 230, padL = 42, padR = 16, padT = 18, padB = 28;
+    var iw = W - padL - padR, ih = H - padT - padB;
+    var maxK = 20;
+    function X(k){ return padL + (k - 1) / (maxK - 1) * iw; }
+    function Yv(v){ return padT + (1 - v) * ih; }
+
+    var grid = "";
+    for (var g = 0; g <= 4; g++){
+      var y = padT + g / 4 * ih;
+      grid += '<line class="grid" x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '"/>';
+      grid += '<text class="lbl" x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + (100 - g * 25) + "%</text>";
+    }
+    var recPts = [], accPts = [];
+    for (var k = 1; k <= maxK; k++){
+      recPts.push(X(k).toFixed(1) + "," + Yv(recallAt(k)).toFixed(1));
+      accPts.push(X(k).toFixed(1) + "," + Yv(accAt(k)).toFixed(1));
+    }
+    var xlabels = "";
+    [1, 5, 10, 15, 20].forEach(function(k){
+      xlabels += '<text class="lbl" x="' + X(k) + '" y="' + (H - 8) + '" text-anchor="middle">k=' + k + "</text>";
+    });
+
+    var mx = X(cur);
+    budgetSvg.innerHTML =
+      grid +
+      '<line class="axis" x1="' + padL + '" y1="' + (padT + ih) + '" x2="' + (W - padR) + '" y2="' + (padT + ih) + '"/>' +
+      '<polyline class="l-rec" points="' + recPts.join(" ") + '"/>' +
+      '<polyline class="l-acc" points="' + accPts.join(" ") + '"/>' +
+      '<line class="mark" x1="' + mx + '" y1="' + padT + '" x2="' + mx + '" y2="' + (padT + ih) + '"/>' +
+      '<circle cx="' + mx + '" cy="' + Yv(recallAt(cur)) + '" r="3" fill="#25476b"/>' +
+      '<circle cx="' + mx + '" cy="' + Yv(accAt(cur)) + '" r="3" fill="#a33a2a"/>' +
+      xlabels +
+      '<text class="lbl" x="' + (padL + 4) + '" y="' + (padT - 6) + '" fill="#25476b">● 召回</text>' +
+      '<text class="lbl" x="' + (padL + 52) + '" y="' + (padT - 6) + '" fill="#a33a2a">● 答案准确</text>';
+
+    bRec.textContent = Math.round(recallAt(cur) * 100) + "%";
+    bAcc.textContent = Math.round(accAt(cur) * 100) + "%";
+    if (bKVal) bKVal.textContent = "k = " + cur;
+    bTok.textContent = tokAt(cur).toLocaleString();
+    var cost = tokAt(cur) / 1000000 * 2;
+    bCost.textContent = "¥" + cost.toFixed(4);
+    var peak = 6;
+    bAcc.className = Math.abs(cur - peak) <= 2 ? "ok" : (cur > 12 ? "hot" : "");
+  }
+  bK.addEventListener("input", function(){ drawBudget(parseInt(bK.value, 10)); });
+  drawBudget(parseInt(bK.value, 10));
+
+  /* ---------- demo 04: Wilson ---------- */
+  function wilson(k, n, z){
+    if (n <= 0) return {p:0, lo:0, hi:0};
+    z = z || 1.96;
+    var p = k / n;
+    var denom = 1 + z * z / n;
+    var center = (p + z * z / (2 * n)) / denom;
+    var half = (z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / denom;
+    return {p:p, lo:Math.max(0, center - half), hi:Math.min(1, center + half)};
+  }
+  var wk = document.getElementById("wk"), wn = document.getElementById("wn");
+  var wPoint = document.getElementById("wPoint"),
+      wLow = document.getElementById("wLow"),
+      wHigh = document.getElementById("wHigh"),
+      wWidth = document.getElementById("wWidth"),
+      ciRows = document.getElementById("ciRows"),
+      wVerdict = document.getElementById("wVerdict");
+
+  function pct(x){ return (x * 100).toFixed(1) + "%"; }
+
+  function renderWilson(){
+    var k = Math.max(0, parseInt(wk.value, 10) || 0);
+    var n = Math.max(1, parseInt(wn.value, 10) || 1);
+    if (k > n) k = n;
+    var r = wilson(k, n);
+    wPoint.textContent = pct(r.p);
+    wLow.textContent = pct(r.lo);
+    wHigh.textContent = pct(r.hi);
+    // 用与显示一致的百分数计算宽度，避免「上下界相减」与「宽度」对不上
+    var lo10 = Math.round(r.lo * 1000) / 10;
+    var hi10 = Math.round(r.hi * 1000) / 10;
+    wWidth.textContent = (hi10 - lo10).toFixed(1);
+
+    var rows = [{label:"当前 " + k + "/" + n, r:r, color:"var(--indigo)"}];
+    [[5,19,"对照 5/19"],[12,20,"对照 12/20"]].forEach(function(c){
+      if (k === c[0] && n === c[1]) return;                 // 与当前值相同则不重复显示
+      rows.push({label:c[2], r:wilson(c[0], c[1]), color:"var(--faint)"});
+    });
+    var html = "";
+    rows.forEach(function(row){
+      html += '<div class="ci-row"><span>' + row.label + "</span>" +
+        '<span class="ci-track">' +
+          '<span class="ci-span" style="left:' + (row.r.lo * 100).toFixed(1) + "%;width:" + ((row.r.hi - row.r.lo) * 100).toFixed(1) + '%"></span>' +
+          '<span class="ci-dot" style="left:' + (row.r.p * 100).toFixed(1) + '%"></span>' +
+        "</span>" +
+        '<span class="ci-lbl">' + pct(row.r.lo) + " – " + pct(row.r.hi) + "</span></div>";
+    });
+    ciRows.innerHTML = html;
+
+    var a = wilson(3, 19), b = wilson(5, 19);
+    var overlap = a.hi >= b.lo && b.hi >= a.lo;
+    if (k === 3 && n === 19){
+      wVerdict.className = "verdict ns";
+      wVerdict.textContent = "与 5/19 的区间重叠 → 「提升 67%」这个说法不成立，差异不显著";
+    } else if (k === 5 && n === 19){
+      wVerdict.className = "verdict ns";
+      wVerdict.textContent = "与 3/19 的区间重叠 → 两个结果不可区分，需要更多样本";
+    } else {
+      wVerdict.className = "verdict " + (overlap ? "ns" : "sig");
+      wVerdict.textContent = overlap
+        ? "与对照区间重叠 → 样本量不足，暂不能宣称差异"
+        : "与对照区间不重叠 → 可以初步认为存在差异，仍需复现";
+    }
+  }
+  wk.addEventListener("input", renderWilson);
+  wn.addEventListener("input", renderWilson);
+  Array.prototype.slice.call(document.querySelectorAll("#demo-wilson [data-k]")).forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll("#demo-wilson [data-k]").forEach(function(b){ b.setAttribute("aria-pressed", "false"); });
+      btn.setAttribute("aria-pressed", "true");
+      wk.value = btn.dataset.k;
+      wn.value = btn.dataset.n;
+      renderWilson();
+    });
+  });
+  renderWilson();
+
+})();
+</script>
+</body>
+</html>
