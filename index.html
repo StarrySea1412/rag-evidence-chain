@@ -302,10 +302,10 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-block:26px 40px}
   <figure class="card" aria-label="证据卡示例">
     <div class="card-head">
       <b>F2 · 纹理与轮廓特征提取</b>
-      <span>CARD 03 / 05</span>
+      <span>CARD 03 / 05 · 虚构示例</span>
     </div>
     <dl style="margin:0">
-      <div class="card-row"><dt>对比文件</dt><dd><b>CN&nbsp;1&nbsp;145&nbsp;xxx&nbsp;xx&nbsp;A</b>　权利要求 1、说明书 [0042]</dd></div>
+      <div class="card-row"><dt>对比文件</dt><dd><b>CN&nbsp;1&nbsp;145&nbsp;xxx&nbsp;xx&nbsp;A</b>（虚构编号）　权利要求 1、说明书 [0042]</dd></div>
       <div class="card-row"><dt>命中段落</dt><dd>说明书 [0042]　char&nbsp;1&nbsp;284–1&nbsp;517</dd></div>
       <div class="card-row"><dt>判定</dt><dd><b>支持</b>（逐字公开了区域分割与两类特征的提取顺序）</dd></div>
     </dl>
@@ -339,7 +339,7 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-block:26px 40px}
 
     <p>选它不是因为专利热，而是因为它把 RAG 的三个难点同时摆在桌面上：<em>检索要精确</em>（术语、编号、否定），<em>输出要可核</em>（引用必须真的支持结论），<em>错误要能拒</em>（没有证据时闭嘴）。这三点做到了，换成合同、财报、病历、内部规章，方法都能搬。</p>
 
-    <p class="scope">范围说明：本文是<strong>实验设计</strong>，不是实验结果。不含任何真实客户数据，也不含我自己的跑分；文中四枚小样里，只有 Wilson 区间那一枚是真实计算（公式可复算），其余三枚（切分几何、混合召回分值、预算曲线）的数值均为<strong>示意构造</strong>，用来让机制可见。真实指标请按第 6 章流程自行跑出，不要把示意值写进简历、汇报或任何对外材料。</p>
+    <p class="scope">范围说明：本文是<strong>实验设计</strong>，不是实验结果。不含任何真实客户数据，也不含我自己的跑分；文中出现的全部专利文本——权利要求、说明书引文、公开号（如 CN&nbsp;1&nbsp;145&nbsp;xxx&nbsp;xx&nbsp;A）——均为<strong>虚构示例</strong>，是我为演示编写的通用句式，不指向任何真实专利或真实案件。文中四枚小样里，只有 Wilson 区间那一枚是真实计算（公式可复算），其余三枚（切分几何、混合召回分值、预算曲线）的数值均为<strong>示意构造</strong>，用来让机制可见。真实指标请按第 6 章流程自行跑出，不要把示意值写进简历、汇报或任何对外材料。</p>
 
     <div class="toc-head"><span>目录</span><span>7 CHAPTERS</span></div>
     <nav class="toc" aria-label="目录">
@@ -433,7 +433,7 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-block:26px 40px}
     <p>结构感知切分的做法是：先按文档结构切成权利要求、说明书、实施例、附图说明，再在段内按句切，最后把每段的 <code>doc_id / section / para_no / char_span</code> 一起存进索引。这样一来，召回的最小单位是一段有明确出处的原文，引用才可能精确到段落。</p>
 
     <div class="demo" id="demo-split">
-      <div class="demo-head"><b>小样 01 · 切分边界</b><span>示意数据 · 纯前端计算</span></div>
+      <div class="demo-head"><b>小样 01 · 切分边界</b><span>虚构示例文本 · 纯前端计算</span></div>
       <div class="demo-body">
         <p style="font-size:13.5px;color:var(--muted);margin:0 0 12px">拖动切分长度，看多少个技术特征会被一刀切断。绿色完整，红色被切。</p>
         <div class="demo-ctrl">
@@ -463,8 +463,8 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-block:26px 40px}
     <p>把长度从 240 拖到 60，你会看到特征一个接一个被切开。真正要记住的不是「该用多少字」，而是：<strong>只要边界由字数决定，它就一定会切到某条限定语</strong>，只是概率高低。结构感知把这个概率从「取决于运气」降到「接近零」，代价是你得先解析文档结构——这一步在中文专利 PDF 上并不轻松，扫描件、双栏、表格、公式都会来捣乱。</p>
 
     <div class="callout warn">
-      <span class="tag">这是示意图，不是实测</span>
-      <p>上面的切分小样用的是 5 条示例特征和一段固定文本，拖滑块得到的是<em>几何后果</em>（刀口有没有落在特征区间内），不是真实语料上的统计。真实特征完整率必须拿你自己的标注集去跑，代码逻辑与这里一致：判断 <code>边界 ∈ (特征起点, 特征终点)</code>。</p>
+      <span class="tag">示例文本为虚构，非任何真实专利</span>
+      <p>上面的切分小样用的是 5 条<strong>我编写的虚构特征文本</strong>（通用专利句式，不指向任何真实专利或真实案件），拖滑块得到的是<em>几何后果</em>（刀口有没有落在特征区间内），不是真实语料上的统计。真实特征完整率必须拿你自己的标注集去跑，代码逻辑与这里一致：判断 <code>边界 ∈ (特征起点, 特征终点)</code>。</p>
     </div>
   </div>
 </section>
