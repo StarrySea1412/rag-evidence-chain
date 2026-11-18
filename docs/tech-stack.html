@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>给 RAG 装一条证据链 · 技术栈全景图</title>
+<style>
+@font-face{font-family:"WenKai";src:url("../assets/wenkai-medium.woff2") format("woff2");font-weight:600 900;font-display:swap}
+:root{
+  --bg:#efe8d7;--surface:#faf4e6;--ink:#26382e;--ink2:#46584b;--muted:#6e7d6f;--faint:#a2ab97;
+  --line:#ddd3ba;--line2:#e7e0cc;--navy:#2f5c47;--navy-soft:#e1ecdf;--orange:#b3402e;--orange-soft:#f2ddd0;
+  --night:#242e27;--night-text:#d8e3d8;
+  --mono:ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{width:900px;background:var(--bg);color:var(--ink);font-family:"WenKai","Microsoft YaHei",sans-serif;padding:44px 46px 36px;
+  background-image:linear-gradient(rgba(28,43,54,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(28,43,54,.05) 1px,transparent 1px);background-size:44px 44px}
+.hazard{height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--orange) 0 16px,transparent 16px 30px);opacity:.8;margin-bottom:18px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:2px solid #b2bec4;padding-bottom:14px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--navy);margin:0 0 9px}
+h1{margin:0;font-size:32px;line-height:1.2;font-weight:800}h1 em{font-style:normal;color:var(--orange)}
+.head .meta{text-align:right;font-family:var(--mono);font-size:9.5px;line-height:1.95;color:var(--muted);white-space:nowrap}
+.dek{margin:14px 0 18px;font-size:13px;line-height:1.8;color:var(--ink2);max-width:780px}
+.sect{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--muted);margin:18px 0 8px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{border:1px solid var(--line);border-radius:6px;background:var(--surface);overflow:hidden}
+.card .ch{padding:9px 13px 7px;border-bottom:1px solid var(--line2);font-weight:800;font-size:13.5px}
+.card .ch small{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--navy);margin-bottom:3px;font-weight:400}
+.card .cb{padding:8px 13px 10px;font-size:11px;line-height:1.75;color:var(--ink2)}
+.card .cb b{color:var(--ink)}
+.card.hl .ch{background:var(--orange-soft);border-top:2px solid var(--orange)}
+.bar{margin:20px 0 0;border-radius:8px;background:var(--night);color:var(--night-text);padding:14px 18px;font-family:var(--mono);font-size:11px;line-height:1.9;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.bar b{color:#e8a45f}
+.foot{margin-top:16px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--faint);display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="head">
+  <div><div class="eyebrow">造物手记 · VOL.18 · TECH STACK</div>
+  <h1>给 RAG 装一条<em>证据链</em> · 技术栈全景图</h1></div>
+  <div class="meta">rag-evidence-chain · EVIDENCE ROOM<br/>6 章 · 6 互动 · 零依赖<br/>2026.11 · StarrySea1412</div>
+</div>
+<div class="dek">一次关于「出处」的解剖：编目切块 → 哈希盖印 → 混合打分 → 阈值配给 → 注入协议 → 台账三点一线——每站一段确定性互动，每个分数可与标本 Python 逐位核对。</div>
+<div class="sect">01 · <b>真实标本</b> 不编一个字</div>
+<div class="cards">
+  <div class="card hl"><div class="ch">315 行标本<small>SPECIMEN</small></div><div class="cb">hermes-agent-workbench 后端 <b>rag_service.py</b>：切块/嵌入/打分/配给/降级全在一文件，常数六个全部写死</div></div>
+  <div class="card"><div class="ch">32 个测试<small>EVIDENCE</small></div><div class="cb">陈旧向量降级、单文件配额、API 坏回包、检索失败不阻断聊天、<b>rag_sources 三点一线</b>逐条有断言</div></div>
+  <div class="card"><div class="ch">结构骨架<small>HOUSE STYLE</small></div><div class="cb">6 章 · <b>6 段经典追问</b> · 速查卡十二句收尾 · 承接 VOL.17 把危险关进笼子</div></div>
+</div>
+<div class="sect">02 · <b>六枚互动</b> 全部确定性</div>
+<div class="cards">
+  <div class="card"><div class="ch">真算类<small>COMPUTE</small></div><div class="cb"><b>MD5 哈希向量逐位对拍</b>（JS vs 标本 Python 六块词法分全等）/ 切块算法完整移植 / 配给三闸真算</div></div>
+  <div class="card"><div class="ch">对照类<small>REPLAY</small></div><div class="cb">断链三态对照 / 指纹六组验印判定 / query→台账全链六步回放</div></div>
+  <div class="card"><div class="ch">验收<small>VERIFY</small></div><div class="cb">playwright <b>15 项行为断言</b> + 移动端 390px 无溢出 + WCAG 对比度量化审计</div></div>
+</div>
+<div class="sect">03 · <b>产线</b> 一条龙</div>
+<div class="bar">
+  <span>GPT 系插图 <b>5 张</b>（含 hero GIF 按魔数验收）</span>
+  <span>发布：GitHub Pages + <b>线上 200 / diff=0</b></span>
+</div>
+<div class="foot"><span>造物手记 VOL.18 · 手/眼/笼子之后，给 Agent 装信用</span><span>starrysea1412.github.io/rag-evidence-chain</span></div>
+</body>
+</html>
